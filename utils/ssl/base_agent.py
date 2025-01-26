@@ -22,11 +22,9 @@ class BaseAgent:
              opponents: dict[int, Robot] = dict(), 
              teammates: dict[int, Robot] = dict(), 
              targets: list[Point] = [],
-             new_targets: bool = False,
              keep_targets=False) -> Robot:
         
         self.reset()
-        self.new_targets = new_targets
         self.pos = Point(self_robot.x, self_robot.y)
         self.vel = Point(self_robot.v_x, self_robot.v_y)
         self.body_angle = self_robot.theta

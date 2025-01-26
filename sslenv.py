@@ -30,7 +30,6 @@ class SSLExampleEnv(SSLBaseEnv):
             high=self.field.length/2,shape=(n_obs, ))
         
         self.targets = []
-        self.new_targets = True
         self.min_dist = 0.18
         self.all_points = FixedQueue(max(4, self.max_targets))
         self.robots_paths = [FixedQueue(40) for i in range(11)]
@@ -85,7 +84,6 @@ class SSLExampleEnv(SSLBaseEnv):
 
         # Generate new targets
         if len(self.targets) == 0:
-            self.new_targets = True
             for i in range(self.targets_per_round):
                 self.targets.append(Point(self.x(), self.y()))
         
@@ -99,9 +97,8 @@ class SSLExampleEnv(SSLBaseEnv):
         myActions = []
         for i in self.my_agents.keys():
             self.my_agents[i].rest = False
-            action = self.my_agents[i].step(self.frame.robots_blue[i], remove_self(obstacles, i), teammates, self.targets, self.new_targets)
+            action = self.my_agents[i].step(self.frame.robots_blue[i], remove_self(obstacles, i), teammates, self.targets)
             myActions.append(action)
-        self.new_targets = False
 
         others_actions = []
         if self.DYNAMIC_OBSTACLES:
@@ -110,14 +107,14 @@ class SSLExampleEnv(SSLBaseEnv):
                 if random.uniform(0.0, 1.0) < self.gen_target_prob:
                     random_target.append(Point(x=self.x(), y=self.y()))
                     
-                others_actions.append(self.blue_agents[i].step(self.frame.robots_blue[i], obstacles, dict(), random_target, False, True))
+                others_actions.append(self.blue_agents[i].step(self.frame.robots_blue[i], obstacles, dict(), random_target, True))
 
             for i in self.yellow_agents.keys():
                 random_target = []
                 if random.uniform(0.0, 1.0) < self.gen_target_prob:
                     random_target.append(Point(x=self.x(), y=self.y()))
 
-                others_actions.append(self.yellow_agents[i].step(self.frame.robots_yellow[i], obstacles, dict(), random_target, False, True))
+                others_actions.append(self.yellow_agents[i].step(self.frame.robots_yellow[i], obstacles, dict(), random_target, True))
         
         return myActions + others_actions
 
@@ -182,15 +179,24 @@ class SSLExampleEnv(SSLBaseEnv):
                 target,
                 (255, 0, 255),
             )
-        
-        for agent in self.my_agents:
-            self.draw_dodge_points(
-                self.window_surface,
-                pos_transform,
-                self.my_agents[agent].dodge_point1,
-                self.my_agents[agent].dodge_point2,
-                (0, 0, 255)
-            )
+        # Print the dodge points and perpendicular points (Can be removed)
+        # for agent in self.my_agents:
+        #     for point in self.my_agents[agent].dodge_points:
+        #         self.draw_target(
+        #             self.window_surface,
+        #             pos_transform,
+        #             point,
+        #             (255, 100, 0),
+        #             0.05,
+        #         )
+        #     for point in self.my_agents[agent].perpendicular_points:
+        #         self.draw_target(
+        #             self.window_surface,
+        #             pos_transform,
+        #             point,
+        #             (247, 253, 4),
+        #             0.05,
+        #         )
 
         if len(self.all_points) > 0:
             my_path = [pos_transform(*p) for p in self.all_points]
@@ -202,14 +208,7 @@ class SSLExampleEnv(SSLBaseEnv):
                 my_path = [pos_transform(*p) for p in self.robots_paths[i]]
                 pygame.draw.lines(self.window_surface, (255, 0, 0), False, my_path, 1)
 
-    def draw_target(self, screen, transformer, point, color):
+    def draw_target(self, screen, transformer, point, color, rad=0.09):
         x, y = transformer(point.x, point.y)
-        size = 0.09 * self.field_renderer.scale
-        pygame.draw.circle(screen, color, (x, y), size, 2)
-
-    def draw_dodge_points(self, screen, transformer, point1, point2, color):
-        size = 0.05 * self.field_renderer.scale
-        x, y = transformer(point1.x, point1.y)
-        pygame.draw.circle(screen, color, (x, y), size, 2)
-        x, y = transformer(point2.x, point2.y)
+        size = rad * self.field_renderer.scale
         pygame.draw.circle(screen, color, (x, y), size, 2)
